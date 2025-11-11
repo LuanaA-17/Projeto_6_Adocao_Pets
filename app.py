@@ -1,18 +1,13 @@
-from flask import Flask, render_template, request, jsonify
-import resend
+from flask import Flask, render_template, request
 import json
-from datetime import datetime
+import resend
 
+resend.api_key = "re_DkzT2CY3_7Na9JerXKXEMt4MJvJdrR9kt"
 
-# https://resend.com/onboarding
-# # Chave API para enviar email com o RESEND
-resend.api_key = "SUA_CHAVE_API"
+with open('Contatos.json', 'r', encoding='utf-8') as arquivo:
+    contatos=json.load(arquivo)
 
 app = Flask(__name__)
-
-
-with open('dados.json', 'r', encoding='utf-8') as f:
-    dados = json.load(f)
 
 @app.route('/', methods=['POST', 'GET'])
 def index():
@@ -20,31 +15,31 @@ def index():
         nome = request.form['name']
         email = request.form['email']
         mensagem = request.form['message']
-        
-        dados_mensagem = {
-            'nome' : nome,
-            'email' : email,
-            'mensagem' : mensagem,
-            'data' : f'{datetime.today()}'
-        }
 
+        contato = {}
+        contato['nome'] = nome
+        contato['email'] = email
+        contato['mensagem'] = mensagem
+
+        contatos.append(contato)
+
+        with open('contatos.json', 'w', encoding='utf-8') as arquivo:
+            json.dump(contatos, arquivo, indent=4, ensure_ascii=False)
+
+        email_html = f"""
+        <h1>Novo contato de {nome}!</h1><br>
+        <p>Email: {email}</p><br>
+        <p>{mensagem}</p>
+        """
         r = resend.Emails.send({
-                "from": "onboarding@resend.dev",
-                "to": 'SEU_EMAIL',
-                "subject": f"Solicitação de adoção {nome}",
-                "html": f"Email:{email}\n{mensagem}"
-            })
-        dados.append(dados_mensagem)
-        with open('dados.json', 'w', encoding='utf-8') as f:
-            json.dump(dados, f, indent=4, ensure_ascii=False)
-
-        return render_template('index.html')
-
+        "from": "onboarding@resend.dev",
+        "to": "luanaalencarcarvalhoalves@gmail.com",
+        "subject": "Contato para adoção de pets",
+        "html": email_html
+        })
 
 
     return render_template('index.html')
 
-
 if __name__ == '__main__':
     app.run(debug=True)
-
